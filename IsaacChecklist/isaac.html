@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Binding of Isaac - Master Checklist</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #eee;
+            --tainted-bg: #050000;
+            --hardmode-color: #aa0000; 
+            --normal-color: #444;      
+            --border-color: #333;
+            --table-header-bg: #111;
+            --row-hover: #2a2a2a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none; 
+        }
+
+        body.tainted-mode {
+            background-color: var(--tainted-bg);
+            box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.95);
+            --border-color: #220000;
+            --table-header-bg: #000;
+            --row-hover: #1a0000;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 3px solid var(--border-color);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            letter-spacing: 2px;
+        }
+
+        .instructions {
+            color: #aaa;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .tainted-indicator {
+            color: #ff3333;
+            display: none;
+        }
+
+        body.tainted-mode .tainted-indicator { display: inline; }
+
+        #table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1300px;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: var(--table-header-bg);
+            z-index: 5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th { font-size: 1.3rem; color: #ccc; text-transform: uppercase; }
+
+        th:first-child, td:first-child {
+            position: sticky;
+            left: 0;
+            background-color: var(--table-header-bg);
+            z-index: 4;
+            text-align: left;
+            font-size: 1.5rem;
+            padding-left: 15px;
+            width: 220px;
+        }
+
+        td:first-child {
+            background-color: var(--bg-color);
+            display: flex;
+            align-items: center;
+            border-right: 3px solid var(--border-color);
+        }
+
+        body.tainted-mode td:first-child { background-color: var(--tainted-bg); }
+        tbody tr:hover { background-color: var(--row-hover); }
+
+        .char-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+            object-fit: contain;
+            image-rendering: pixelated; 
+        }
+
+        .mark-header-icon {
+            width: 35px;
+            height: 35px;
+            margin: 0 auto 5px auto;
+            object-fit: contain;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .mark-cell { width: 55px; }
+
+        .checkbox {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            background-color: #111;
+            border: 2px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-size: 80%;
+            background-repeat: no-repeat;
+            background-position: center;
+            image-rendering: pixelated;
+        }
+
+        .checkbox:hover { border-color: #888; }
+
+        .hold-fill {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 0%;
+            background-color: rgba(255, 0, 0, 0.4);
+            transition: height 0.1s linear;
+            pointer-events: none;
+        }
+
+        .checkbox.normal {
+            background-color: var(--normal-color);
+            border-color: #888;
+        }
+
+        .checkbox.hard {
+            background-color: #2a0000;
+            border-color: #ff3333;
+            box-shadow: inset 0 0 10px var(--hardmode-color), 0 0 8px var(--hardmode-color);
+        }
+
+        .hundred-percent-box {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            background: #111;
+            border: 2px dashed #444;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .hundred-percent-box.achieved {
+            background-color: var(--hardmode-color);
+            border: 2px solid #ff3333;
+            box-shadow: 0 0 15px #ff3333;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Tooltip Styling */
+        #tooltip {
+            position: absolute;
+            background: rgba(15, 10, 10, 0.95);
+            border: 2px solid #4a3b32;
+            color: #e0d8c8;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 1.5rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.1s;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            text-shadow: 1px 1px 0 #000;
+        }
+        #tooltip.visible {
+            opacity: 1;
+        }
+        .tooltip-sub {
+            font-size: 1rem;
+            color: #888;
+            margin-top: 2px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Binding of Isaac <span class="tainted-indicator">Tainted</span> Master Checklist</h1>
+        <p class="instructions">Press <strong>'E'</strong> to toggle Tainted variants. <strong>Hover</strong> for rewards.</p>
+    </header>
+
+    <div id="table-container">
+        <table id="checklist-table">
+            <thead><tr id="table-header-row"></tr></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <!-- The Hover Tooltip Container -->
+    <div id="tooltip"></div>
+
+    <script>
+        const characters = [
+            "Isaac", "Magdalene", "Cain", "Judas", "???", "Eve", 
+            "Samson", "Azazel", "Lazarus", "Eden", "The Lost", 
+            "Lilith", "Keeper", "Apollyon", "The Forgotten", "Bethany", "Jacob & Esau"
+        ];
+
+        const marks = [
+            "Mom's Heart", "Isaac", "???", "Satan", "The Lamb", 
+            "Mega Satan", "Boss Rush", "Hush", "Greed", 
+            "Delirium", "Mother", "The Beast"
+        ];
+
+        // Explicit Image Mappings Based on Your Provided Filenames
+        const markFiles = {
+            "Mom's Heart": "Heart", "Isaac": "Cathedral", "???": "Chest", 
+            "Satan": "Sheol", "The Lamb": "DarkRoom", "Mega Satan": "Brimstone", 
+            "Boss Rush": "BossRush", "Hush": "BlueWomb", "Greed": "Greed", 
+            "Delirium": "Delirium", "Mother": "Mother", "The Beast": "Beast"
+        };
+
+        const normalCharFiles = {
+            "Isaac": "Character_Isaac_appearance", "Magdalene": "Character_Magdalene_appearance", "Cain": "Character_Cain_appearance", "Judas": "Character_Judas_appearance", "???": "Character_____appearance", "Eve": "Character_Eve_appearance", "Samson": "Character_Samson_appearance", "Azazel": "Character_Azazel_appearance", "Lazarus": "Character_Lazarus_appearance", "Eden": "Character_Eden_appearance", "The Lost": "Character_The_Lost_appearance", "Lilith": "Character_Lilith_appearance", "Keeper": "Character_Keeper_appearance", "Apollyon": "Character_Apollyon_appearance", "The Forgotten": "Character_The_Forgotten_appearance", "Bethany": "Character_Bethany_appearance", "Jacob & Esau": "Character_Jacob_appearance"
+        };
+
+        const taintedCharFiles = {
+            "Isaac": "Character_Tainted_Isaac_appearance", "Magdalene": "Character_Tainted_Magdalene_appearance", "Cain": "Character_Tainted_Cain_appearance", "Judas": "Character_Tainted_Judas_appearance", "???": "Character_Tainted_____appearance", "Eve": "Character_Tainted_Eve_appearance", "Samson": "Character_Tainted_Samson_appearance", "Azazel": "Character_Tainted_Azazel_appearance", "Lazarus": "Character_Tainted_Lazarus_appearance", "Eden": "Character_Tainted_Eden_appearance", "The Lost": "Character_Tainted_Lost_appearance", "Lilith": "Character_Tainted_Lilith_appearance", "Keeper": "Character_Tainted_Keeper_appearance", "Apollyon": "Character_Tainted_Apollyon_appearance", "The Forgotten": "Character_Tainted_Forgotten_appearance", "Bethany": "Character_Tainted_Bethany_appearance", "Jacob & Esau": "Character_Tainted_Jacob_appearance"
+        };
+
+        // --- UNLOCK DATABASE ---
+        const normalUnlocks = {
+            "Isaac": {"Mom's Heart": "Lost Baby", "Isaac": "Isaac's Tears", "???": "The D20", "Satan": "Mom's Knife", "The Lamb": "Missing Poster", "Mega Satan": "Cry Baby", "Boss Rush": "Isaac's Head", "Hush": "Fart Baby", "Greed": "Lil' Chest", "Greedier": "D1", "Delirium": "D Infinity", "Mother": "Meat Cleaver", "The Beast": "Options?", "100%": "Buddy Baby"},
+            "Magdalene": {"Mom's Heart": "Cute Baby", "Isaac": "A Cross", "???": "Celtic Cross", "Satan": "Guardian Angel", "The Lamb": "Maggy's Faith", "Mega Satan": "Red Baby", "Boss Rush": "Maggy's Bow", "Hush": "Purity", "Greed": "Censer", "Greedier": "Glyph of Balance", "Delirium": "Eucharist", "Mother": "Yuck Heart", "The Beast": "Candy Heart", "100%": "Colorful Baby"},
+            "Cain": {"Mom's Heart": "Glass Baby", "Isaac": "A Bag of Pennies", "???": "Cain's Eye", "Satan": "A Bag of Bombs", "The Lamb": "Abel", "Mega Satan": "Green Baby", "Boss Rush": "Cain's Other Eye", "Hush": "D12", "Greed": "Evil Eye", "Greedier": "Sack of Sacks", "Delirium": "Silver Dollar", "Mother": "Guppy's Eye", "The Beast": "A Pound of Flesh", "100%": "Picky Baby"},
+            "Judas": {"Mom's Heart": "Shadow Baby", "Isaac": "Guillotine", "???": "The Left Hand", "Satan": "Judas' Tongue", "The Lamb": "Curved Horn", "Mega Satan": "Brown Baby", "Boss Rush": "Judas' Shadow", "Hush": "Betrayal", "Greed": "My Shadow", "Greedier": "Eye of Belial", "Delirium": "Shade", "Mother": "Akeldama", "The Beast": "Redemption", "100%": "Belial Baby"},
+            "???": {"Mom's Heart": "Dead Baby", "Isaac": "The D6", "???": "Fate", "Satan": "Forget Me Now", "The Lamb": "???'s Soul", "Mega Satan": "Blue Baby", "Boss Rush": "???'s Only Friend", "Hush": "Fate's Reward", "Greed": "Cracked Dice", "Greedier": "Meconium", "Delirium": "King Baby", "Mother": "Eternal D6", "The Beast": "Montezuma's Revenge", "100%": "Hive Baby"},
+            "Eve": {"Mom's Heart": "Crow Baby", "Isaac": "Eve's Bird Foot", "???": "Sacrificial Dagger", "Satan": "The Razor", "The Lamb": "Black Lipstick", "Mega Satan": "Lil' Baby", "Boss Rush": "Eve's Mascara", "Hush": "Athame", "Greed": "Black Feather", "Greedier": "Crow Heart", "Delirium": "Dull Razor", "Mother": "Bird Cage", "The Beast": "Cracked Orb", "100%": "Whore Baby"},
+            "Samson": {"Mom's Heart": "Fighting Baby", "Isaac": "Bloody Lust", "???": "Blood Penny", "Satan": "Blood Rights", "The Lamb": "Samson's Lock", "Mega Satan": "Rage Baby", "Boss Rush": "Samson's Chains", "Hush": "Blind Rage", "Greed": "Lusty Blood", "Greedier": "Stem Cell", "Delirium": "Bloody Crown", "Mother": "Bloody Gust", "The Beast": "Empty Heart", "100%": "Revenge Baby"},
+            "Azazel": {"Mom's Heart": "Begotten Baby", "Isaac": "Satanic Bible", "???": "Abaddon", "Satan": "Daemon's Tail", "The Lamb": "Demon Baby", "Mega Satan": "Black Baby", "Boss Rush": "The Nail", "Hush": "Maw of the Void", "Greed": "Lilith (Character)", "Greedier": "Bat Wing", "Delirium": "Dark Prince's Crown", "Mother": "Devil's Crown", "The Beast": "Lil Abaddon", "100%": "Sucky Baby"},
+            "Lazarus": {"Mom's Heart": "Wrapped Baby", "Isaac": "Lazarus' Rags", "???": "Store Credit", "Satan": "Broken Ankh", "The Lamb": "Pandora's Box", "Mega Satan": "Long Baby", "Boss Rush": "Missing No.", "Hush": "Empty Vessel", "Greed": "Key Bum", "Greedier": "Plan C", "Delirium": "Compound Fracture", "Mother": "Tinytoma", "The Beast": "Astral Projection", "100%": "Dripping Baby"},
+            "Eden": {"Mom's Heart": "Glitch Baby", "Isaac": "Blank Card", "???": "Mysterious Paper", "Satan": "Book of Secrets", "The Lamb": "Mystery Sack", "Mega Satan": "Yellow Baby", "Boss Rush": "Undefined", "Hush": "Eden's Blessing", "Greed": "GB Bug", "Greedier": "Metronome", "Delirium": "Eden's Soul", "Mother": "'M", "The Beast": "Everything Jar", "100%": "Cracked Baby"},
+            "The Lost": {"Mom's Heart": "-0- Baby", "Isaac": "Isaac's Heart", "???": "The Body", "Satan": "The Mind", "The Lamb": "The Soul", "Mega Satan": "White Baby", "Boss Rush": "The D100", "Hush": "Sworn Protector", "Greed": "Zodiac", "Greedier": "Dad's Lost Coin", "Delirium": "Holy Card", "Mother": "Lost Soul", "The Beast": "Hungry Soul", "100%": "Godhead"},
+            "Lilith": {"Mom's Heart": "Goat Head Baby", "Isaac": "Rune Bag", "???": "Cambion Conception", "Satan": "Serpent's Kiss", "The Lamb": "Succubus", "Mega Satan": "Big Baby", "Boss Rush": "Immaculate Conception", "Hush": "Incubus", "Greed": "Box of Friends", "Greedier": "Duality", "Delirium": "Euthanasia", "Mother": "Blood Puppy", "The Beast": "C Section", "100%": "Dark Baby"},
+            "Keeper": {"Mom's Heart": "Super Greed Baby", "Isaac": "Wooden Nickel", "???": "Deep Pockets", "Satan": "Store Key", "The Lamb": "Karma", "Mega Satan": "Noose Baby", "Boss Rush": "Sticky Nickels", "Hush": "Keeper starts with 1 Penny", "Greed": "Rib of Greed", "Greedier": "Eye of Greed", "Delirium": "Crooked Penny", "Mother": "Keeper's Sack", "The Beast": "Keeper's Box", "100%": "Sale Baby"},
+            "Apollyon": {"Mom's Heart": "Smelter", "Isaac": "Locust of Wrath", "???": "Locust of Famine", "Satan": "Locust of Pestilence", "The Lamb": "Locust of Death", "Mega Satan": "Mort Baby", "Boss Rush": "Locust of Conquest", "Hush": "Hushy", "Greed": "Brown Nugget", "Greedier": "Black Rune", "Delirium": "Void", "Mother": "Lil Portal", "The Beast": "Worm Friend", "100%": "Apollyon Baby"},
+            "The Forgotten": {"Mom's Heart": "Marrow", "Isaac": "Slipped Rib", "???": "Jaw Bone", "Satan": "Pointy Rib", "The Lamb": "Brittle Bones", "Mega Satan": "Bound Baby", "Boss Rush": "Divorce Papers", "Hush": "Hallowed Ground", "Greed": "Finger Bone", "Greedier": "Dad's Ring", "Delirium": "Book of the Dead", "Mother": "Bone Spurs", "The Beast": "Spirit Shackles", "100%": "Bone Baby"},
+            "Bethany": {"Mom's Heart": "Wisp Baby", "Isaac": "Book of Virtues", "???": "Blessed Penny", "Satan": "Urn of Souls", "The Lamb": "Alabaster Box", "Mega Satan": "Glowing Baby", "Boss Rush": "Beth's Faith", "Hush": "Divine Intervention", "Greed": "Soul Locket", "Greedier": "Vade Retro", "Delirium": "Star of Bethlehem", "Mother": "Revelation", "The Beast": "Jar of Wisps", "100%": "Hope Baby"},
+            "Jacob & Esau": {"Mom's Heart": "Double Baby", "Isaac": "The Stairway", "???": "Birthright", "Satan": "Red Stew", "The Lamb": "Damocles", "Mega Satan": "Illusion Baby", "Boss Rush": "Rock Bottom", "Hush": "Vanishing Twin", "Greed": "Inner Child", "Greedier": "Genesis", "Delirium": "Suplex!", "Mother": "Magic Skin", "The Beast": "Friend Finder", "100%": "Solomon's Baby"}
+        };
+
+        const taintedUnlocks = {
+            "Isaac": {"Path1": "Mom's Lock", "Path2": "Soul of Isaac", "Mega Satan": "Mega Chest", "Greedier": "Reverse The Stars", "Delirium": "Spindown Dice", "Mother": "Dice Bag", "The Beast": "Glitched Crown"},
+            "Magdalene": {"Path1": "Holy Crown", "Path2": "Soul of Magdalene", "Mega Satan": "Queen of Hearts", "Greedier": "Reverse The Lovers", "Delirium": "Hypercoagulation", "Mother": "Mother's Kiss", "The Beast": "Belly Jelly"},
+            "Cain": {"Path1": "Gilded Key", "Path2": "Soul of Cain", "Mega Satan": "Gold Pill", "Greedier": "Reverse Wheel of Fortune", "Delirium": "Bag of Crafting", "Mother": "Lucky Sack", "The Beast": "Blue Key"},
+            "Judas": {"Path1": "Your Soul", "Path2": "Soul of Judas", "Mega Satan": "Black Sack", "Greedier": "Reverse The Magician", "Delirium": "Dark Arts", "Mother": "Number Magnet", "The Beast": "Sanguine Bond"},
+            "???": {"Path1": "Dingle Berry", "Path2": "Soul of ???", "Mega Satan": "Charming Poop", "Greedier": "Reverse The Emperor", "Delirium": "IBS", "Mother": "Ring Cap", "The Beast": "The Swarm"},
+            "Eve": {"Path1": "Strange Key", "Path2": "Soul of Eve", "Mega Satan": "Horse Pill", "Greedier": "Reverse The Empress", "Delirium": "Sumptorium", "Mother": "Lil Clot", "The Beast": "Heartbreak"},
+            "Samson": {"Path1": "Temporary Tattoo", "Path2": "Soul of Samson", "Mega Satan": "Crane Game", "Greedier": "Reverse Strength", "Delirium": "Berserk!", "Mother": "Swallowed M80", "The Beast": "Larynx"},
+            "Azazel": {"Path1": "Wicked Crown", "Path2": "Soul of Azazel", "Mega Satan": "Hell Game", "Greedier": "Reverse The Devil", "Delirium": "Hemoptysis", "Mother": "Azazel's Stump", "The Beast": "Azazel's Rage"},
+            "Lazarus": {"Path1": "Torn Pocket", "Path2": "Soul of Lazarus", "Mega Satan": "Wooden Chest", "Greedier": "Reverse Judgement", "Delirium": "Flip", "Mother": "Torn Card", "The Beast": "Salvation"},
+            "Eden": {"Path1": "Nuh Uh!", "Path2": "Soul of Eden", "Mega Satan": "Wild Card", "Greedier": "Reverse The World", "Delirium": "Corrupted Data", "Mother": "Modeling Clay", "The Beast": "TMTRAINER"},
+            "The Lost": {"Path1": "Kid's Drawing", "Path2": "Soul of the Lost", "Mega Satan": "Haunted Chest", "Greedier": "Reverse The Fool", "Delirium": "Ghost Bombs", "Mother": "Crystal Key", "The Beast": "Sacred Orb"},
+            "Lilith": {"Path1": "The Twins", "Path2": "Soul of Lilith", "Mega Satan": "Fool's Gold", "Greedier": "Reverse The High Priestess", "Delirium": "Gello", "Mother": "Adoption Papers", "The Beast": "Twisted Pair"},
+            "Keeper": {"Path1": "Keeper's Bargain", "Path2": "Soul of the Keeper", "Mega Satan": "Golden Penny", "Greedier": "Reverse The Hanged Man", "Delirium": "Keeper's Kin", "Mother": "Cursed Penny", "The Beast": "Strawman"},
+            "Apollyon": {"Path1": "Cricket Leg", "Path2": "Soul of Apollyon", "Mega Satan": "Rotten Beggar", "Greedier": "Reverse The Tower", "Delirium": "Abyss", "Mother": "Apollyon's Best Friend", "The Beast": "Echo Chamber"},
+            "The Forgotten": {"Path1": "Polished Bone", "Path2": "Soul of the Forgotten", "Mega Satan": "Golden Battery", "Greedier": "Reverse Death", "Delirium": "Decap Attack", "Mother": "Hollow Heart", "The Beast": "Isaac's Tomb"},
+            "Bethany": {"Path1": "Expansion Pack", "Path2": "Soul of Bethany", "Mega Satan": "Confessional", "Greedier": "Reverse The Hierophant", "Delirium": "Lemegeton", "Mother": "Beth's Essence", "The Beast": "Vengeful Spirit"},
+            "Jacob & Esau": {"Path1": "RC Remote", "Path2": "Soul of Jacob and Esau", "Mega Satan": "Golden Trinket", "Greedier": "Reverse The Sun and the Moon", "Delirium": "Anima Sola", "Mother": "Found Soul", "The Beast": "Esau Jr."}
+        };
+
+        const path1Marks = ["Isaac", "???", "Satan", "The Lamb"];
+        const path2Marks = ["Boss Rush", "Hush"];
+
+        let isTainted = false;
+        const holdDuration = 400; 
+
+        // Initialize LocalStorage Save Data
+        let saveData = JSON.parse(localStorage.getItem('isaacMasterSaveDataV4'));
+        if (!saveData) {
+            saveData = {};
+            characters.forEach(c => {
+                saveData[c] = { normal: {}, tainted: {} };
+                marks.forEach(m => {
+                    saveData[c].normal[m] = 0; 
+                    saveData[c].tainted[m] = 0;
+                });
+            });
+        }
+
+        const tableHeaderRow = document.getElementById('table-header-row');
+        const tableBody = document.getElementById('table-body');
+        const tooltip = document.getElementById('tooltip');
+
+        function init() {
+            renderHeaders();
+            renderTable();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'e') toggleTainted();
+            });
+        }
+
+        function save() {
+            localStorage.setItem('isaacMasterSaveDataV4', JSON.stringify(saveData));
+        }
+
+        function toggleTainted() {
+            isTainted = !isTainted;
+            if (isTainted) document.body.classList.add('tainted-mode');
+            else document.body.classList.remove('tainted-mode');
+            renderTable(); 
+        }
+
+        function renderHeaders() {
+            let html = `<th>Character</th>`;
+            marks.forEach(mark => {
+                const markPrefix = markFiles[mark];
+                html += `
+                    <th title="${mark}">
+                        <img src="images/marks/Completion_${markPrefix}_Hard.webp" class="mark-header-icon" onerror="this.style.display='none'">
+                        <div style="font-size: 0.9rem;">${mark}</div>
+                    </th>
+                `;
+            });
+            html += `<th>100%</th>`;
+            tableHeaderRow.innerHTML = html;
+        }
+
+        function attachTooltip(element, text) {
+            element.addEventListener('mouseenter', () => {
+                tooltip.innerHTML = text;
+                tooltip.classList.add('visible');
+            });
+
+            element.addEventListener('mousemove', (e) => {
+                const tooltipWidth = tooltip.offsetWidth;
+                const tooltipHeight = tooltip.offsetHeight;
+                let x = e.pageX + 15;
+                let y = e.pageY + 15;
+                
+                if (x + tooltipWidth > window.innerWidth) x = e.pageX - tooltipWidth - 15;
+                if (y + tooltipHeight > window.innerHeight) y = e.pageY - tooltipHeight - 15;
+                
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            });
+
+            element.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+
+            characters.forEach(char => {
+                const tr = document.createElement('tr');
+                const charData = isTainted ? saveData[char].tainted : saveData[char].normal;
+                const charPrefix = isTainted ? "Tainted " : "";
+                
+                const charFileName = isTainted ? taintedCharFiles[char] : normalCharFiles[char];
+                const charImagePath = `images/characters/${charFileName}.webp`;
+
+                const tdChar = document.createElement('td');
+                tdChar.innerHTML = `
+                    <img src="${charImagePath}" class="char-icon" alt="${charPrefix}${char}" onerror="this.style.display='none'">
+                    <span>${charPrefix}${char}</span>
+                `;
+                tr.appendChild(tdChar);
+
+                const hundredPercentTd = document.createElement('td');
+                const hundredPercentBox = document.createElement('div');
+                hundredPercentBox.className = 'hundred-percent-box';
+                hundredPercentTd.appendChild(hundredPercentBox);
+
+                // Configure 100% tooltip
+                const hundredPercentText = isTainted 
+                    ? `Death Certificate<br><span class="tooltip-sub">(Requires all marks on ALL Tainted Characters)</span>`
+                    : normalUnlocks[char]["100%"];
+                attachTooltip(hundredPercentTd, hundredPercentText);
+
+                marks.forEach(mark => {
+                    const tdMark = document.createElement('td');
+                    tdMark.className = 'mark-cell';
+                    
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'checkbox';
+                    
+                    const fill = document.createElement('div');
+                    fill.className = 'hold-fill';
+                    checkbox.appendChild(fill);
+
+                    updateCheckboxVisual(checkbox, mark, charData[mark]);
+
+                    // Determine Tooltip Text Based on Tainted vs Normal rules
+                    let unlockText = "";
+                    if (isTainted) {
+                        if (path1Marks.includes(mark)) unlockText = `${taintedUnlocks[char]["Path1"]}<br><span class="tooltip-sub">(Requires Isaac, ???, Satan, & The Lamb)</span>`;
+                        else if (path2Marks.includes(mark)) unlockText = `${taintedUnlocks[char]["Path2"]}<br><span class="tooltip-sub">(Requires Boss Rush & Hush)</span>`;
+                        else if (mark === "Greed") unlockText = `Greed: None<br>Greedier: ${taintedUnlocks[char]["Greedier"]}`;
+                        else if (mark === "Mom's Heart") unlockText = "<span style='color: #888;'>No individual unlock</span>";
+                        else unlockText = taintedUnlocks[char][mark];
+                    } else {
+                        if (mark === "Greed") unlockText = `Greed: <span style="color: #aaa">${normalUnlocks[char]["Greed"]}</span><br>Greedier: <span style="color: #ff5555">${normalUnlocks[char]["Greedier"]}</span>`;
+                        else unlockText = normalUnlocks[char][mark];
+                    }
+                    attachTooltip(tdMark, unlockText);
+
+                    // Click/Hold mechanics
+                    let isHolding = false;
+                    let holdTimer;
+
+                    const startHold = (e) => {
+                        if (e.type !== 'touchstart') e.preventDefault();
+                        isHolding = true;
+                        fill.style.transition = `height ${holdDuration}ms linear`;
+                        fill.style.height = '100%';
+
+                        holdTimer = setTimeout(() => {
+                            charData[mark] = charData[mark] === 2 ? 0 : 2;
+                            updateCheckboxVisual(checkbox, mark, charData[mark]);
+                            check100Percent(charData, hundredPercentBox);
+                            save();
+                            isHolding = false;
+                        }, holdDuration);
+                    };
+
+                    const endHold = () => {
+                        if (!isHolding) return;
+                        clearTimeout(holdTimer);
+                        fill.style.transition = 'none';
+                        fill.style.height = '0%';
+                        isHolding = false;
+
+                        charData[mark] = charData[mark] === 1 ? 0 : 1;
+                        updateCheckboxVisual(checkbox, mark, charData[mark]);
+                        check100Percent(charData, hundredPercentBox);
+                        save();
+                    };
+
+                    const cancelHold = () => {
+                        if (!isHolding) return;
+                        clearTimeout(holdTimer);
+                        fill.style.transition = 'none';
+                        fill.style.height = '0%';
+                        isHolding = false;
+                    };
+
+                    checkbox.addEventListener('mousedown', startHold);
+                    checkbox.addEventListener('mouseup', endHold);
+                    checkbox.addEventListener('mouseleave', cancelHold);
+                    checkbox.addEventListener('touchstart', startHold, {passive: true});
+                    checkbox.addEventListener('touchend', endHold);
+                    checkbox.addEventListener('touchcancel', cancelHold);
+
+                    tdMark.appendChild(checkbox);
+                    tr.appendChild(tdMark);
+                });
+
+                check100Percent(charData, hundredPercentBox);
+                tr.appendChild(hundredPercentTd);
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function updateCheckboxVisual(element, mark, state) {
+            element.classList.remove('normal', 'hard');
+            element.style.backgroundImage = 'none';
+            
+            const markPrefix = markFiles[mark];
+
+            if (state === 1) {
+                element.classList.add('normal');
+                element.style.backgroundImage = `url('images/marks/Completion_${markPrefix}.webp')`;
+            } else if (state === 2) {
+                element.classList.add('hard');
+                element.style.backgroundImage = `url('images/marks/Completion_${markPrefix}_Hard.webp')`;
+            }
+            
+            element.querySelector('.hold-fill').style.height = '0%'; 
+        }
+
+        function check100Percent(charData, hundredPercentElement) {
+            let isComplete = true;
+            for (let i = 0; i < marks.length; i++) {
+                if (charData[marks[i]] !== 2) { 
+                    isComplete = false;
+                    break;
+                }
+            }
+            if (isComplete) hundredPercentElement.classList.add('achieved');
+            else hundredPercentElement.classList.remove('achieved');
+        }
+
+        init();
+    </script>
+</body>
+</html>
