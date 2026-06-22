@@ -58,7 +58,7 @@
         .instructions {
             color: #aaa;
             font-size: 1.2rem;
-            margin: 5px 0 0 0;
+            margin: 5px 0;
         }
 
         .tainted-indicator {
@@ -68,12 +68,99 @@
 
         body.tainted-mode .tainted-indicator { display: inline; }
 
+        /* Search Bar */
+        #search-bar {
+            padding: 8px 15px;
+            margin: 5px auto;
+            width: 80%;
+            max-width: 400px;
+            background: #222;
+            border: 2px solid #444;
+            color: #eee;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            border-radius: 4px;
+            display: block;
+            transition: border-color 0.2s;
+        }
+
+        #search-bar:focus {
+            outline: none;
+            border-color: #888;
+        }
+
+        /* Layout Container */
+        #main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
         #table-container {
             flex: 1;
             overflow: auto;
             padding: 20px;
         }
 
+        /* Target Sidebar */
+        #target-sidebar {
+            width: 300px;
+            background: rgba(10, 10, 10, 0.9);
+            border-left: 3px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: background-color 0.5s ease;
+        }
+
+        #target-sidebar h2 {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin: 15px 0 0 0;
+            color: gold;
+        }
+
+        #target-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .target-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .target-item:hover {
+            border-color: #ff3333;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .target-icon {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        .target-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .target-item-name { color: gold; font-size: 1.2rem; line-height: 1.1; }
+        .target-char-name { color: #aaa; font-size: 0.9rem; }
+
+        /* Table */
         table {
             border-collapse: collapse;
             width: 100%;
@@ -149,7 +236,7 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
             background-size: 80%;
             background-repeat: no-repeat;
             background-position: center;
@@ -157,6 +244,18 @@
         }
 
         .checkbox:hover { border-color: #888; }
+
+        /* Search Highlight/Dimming logic */
+        .checkbox.dimmed {
+            opacity: 0.2;
+            filter: grayscale(100%);
+        }
+
+        /* Target Outline Logic */
+        .checkbox.targeted {
+            border: 2px solid gold;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.8), inset 0 0 5px rgba(255, 215, 0, 0.5);
+        }
 
         .hold-fill {
             position: absolute;
@@ -178,20 +277,31 @@
             box-shadow: inset 0 0 10px var(--hardmode-color), 0 0 8px var(--hardmode-color);
         }
 
+        .checkbox.hard.targeted {
+            border-color: gold; /* Target overrides hard border */
+        }
+
         .hundred-percent-box {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             margin: 0 auto;
             background: #111;
             border: 2px dashed #444;
             border-radius: 50%;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #888;
         }
 
         .hundred-percent-box.achieved {
             background-color: var(--hardmode-color);
             border: 2px solid #ff3333;
             box-shadow: 0 0 15px #ff3333;
+            color: #fff;
+            font-weight: bold;
             animation: pulse 1.5s infinite alternate;
         }
 
@@ -217,29 +327,33 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.8);
             text-shadow: 1px 1px 0 #000;
         }
-        #tooltip.visible {
-            opacity: 1;
-        }
-        .tooltip-sub {
-            font-size: 1rem;
-            color: #888;
-            margin-top: 2px;
-            display: block;
-        }
+        #tooltip.visible { opacity: 1; }
+        .tooltip-sub { font-size: 1rem; color: #888; margin-top: 2px; display: block; }
+        .tooltip-gold { color: gold; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>The Binding of Isaac <span class="tainted-indicator">Tainted</span> Master Checklist</h1>
-        <p class="instructions">Press <strong>'E'</strong> to toggle Tainted variants. <strong>Hover</strong> for rewards.</p>
+        <p class="instructions">Press <strong>'E'</strong> to toggle variants. <strong>Hover</strong> for rewards. <strong>Right-Click</strong> to target.</p>
+        <input type="text" id="search-bar" placeholder="Search for items, marks, or characters...">
     </header>
 
-    <div id="table-container">
-        <table id="checklist-table">
-            <thead><tr id="table-header-row"></tr></thead>
-            <tbody id="table-body"></tbody>
-        </table>
+    <div id="main-layout">
+        <div id="table-container">
+            <table id="checklist-table">
+                <thead><tr id="table-header-row"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div id="target-sidebar">
+            <h2>Current Goals</h2>
+            <div id="target-list">
+                <!-- Populated via JS -->
+            </div>
+        </div>
     </div>
 
     <!-- The Hover Tooltip Container -->
@@ -258,7 +372,7 @@
             "Delirium", "Mother", "The Beast"
         ];
 
-        // Explicit Image Mappings Based on Your Provided Filenames
+        // Explicit Image Mappings
         const markFiles = {
             "Mom's Heart": "Heart", "Isaac": "Cathedral", "???": "Chest", 
             "Satan": "Sheol", "The Lamb": "DarkRoom", "Mega Satan": "Brimstone", 
@@ -274,7 +388,7 @@
             "Isaac": "Character_Tainted_Isaac_appearance", "Magdalene": "Character_Tainted_Magdalene_appearance", "Cain": "Character_Tainted_Cain_appearance", "Judas": "Character_Tainted_Judas_appearance", "???": "Character_Tainted_____appearance", "Eve": "Character_Tainted_Eve_appearance", "Samson": "Character_Tainted_Samson_appearance", "Azazel": "Character_Tainted_Azazel_appearance", "Lazarus": "Character_Tainted_Lazarus_appearance", "Eden": "Character_Tainted_Eden_appearance", "The Lost": "Character_Tainted_Lost_appearance", "Lilith": "Character_Tainted_Lilith_appearance", "Keeper": "Character_Tainted_Keeper_appearance", "Apollyon": "Character_Tainted_Apollyon_appearance", "The Forgotten": "Character_Tainted_Forgotten_appearance", "Bethany": "Character_Tainted_Bethany_appearance", "Jacob & Esau": "Character_Tainted_Jacob_appearance"
         };
 
-        // --- UNLOCK DATABASE ---
+        // UNLOCK DATABASE
         const normalUnlocks = {
             "Isaac": {"Mom's Heart": "Lost Baby", "Isaac": "Isaac's Tears", "???": "The D20", "Satan": "Mom's Knife", "The Lamb": "Missing Poster", "Mega Satan": "Cry Baby", "Boss Rush": "Isaac's Head", "Hush": "Fart Baby", "Greed": "Lil' Chest", "Greedier": "D1", "Delirium": "D Infinity", "Mother": "Meat Cleaver", "The Beast": "Options?", "100%": "Buddy Baby"},
             "Magdalene": {"Mom's Heart": "Cute Baby", "Isaac": "A Cross", "???": "Celtic Cross", "Satan": "Guardian Angel", "The Lamb": "Maggy's Faith", "Mega Satan": "Red Baby", "Boss Rush": "Maggy's Bow", "Hush": "Purity", "Greed": "Censer", "Greedier": "Glyph of Balance", "Delirium": "Eucharist", "Mother": "Yuck Heart", "The Beast": "Candy Heart", "100%": "Colorful Baby"},
@@ -321,7 +435,7 @@
         let isTainted = false;
         const holdDuration = 400; 
 
-        // Initialize LocalStorage Save Data
+        // Primary Save Data (Kept the exact same name as your request)
         let saveData = JSON.parse(localStorage.getItem('isaacMasterSaveDataV4'));
         if (!saveData) {
             saveData = {};
@@ -334,21 +448,34 @@
             });
         }
 
+        // Target Data (Uses a new auxilliary key so it doesn't break main saves)
+        let targets = JSON.parse(localStorage.getItem('isaacMasterTargetsV1')) || [];
+
         const tableHeaderRow = document.getElementById('table-header-row');
         const tableBody = document.getElementById('table-body');
         const tooltip = document.getElementById('tooltip');
+        const searchBar = document.getElementById('search-bar');
+        const targetList = document.getElementById('target-list');
 
         function init() {
             renderHeaders();
             renderTable();
+            renderSidebar();
 
             document.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'e') toggleTainted();
+                if (e.key.toLowerCase() === 'e' && document.activeElement !== searchBar) toggleTainted();
             });
+
+            searchBar.addEventListener('input', handleSearch);
         }
 
         function save() {
             localStorage.setItem('isaacMasterSaveDataV4', JSON.stringify(saveData));
+        }
+
+        function saveTargets() {
+            localStorage.setItem('isaacMasterTargetsV1', JSON.stringify(targets));
+            renderSidebar();
         }
 
         function toggleTainted() {
@@ -356,6 +483,32 @@
             if (isTainted) document.body.classList.add('tainted-mode');
             else document.body.classList.remove('tainted-mode');
             renderTable(); 
+            handleSearch(); // Re-apply search filter
+        }
+
+        // Helps figure out the exact string for searching and displaying
+        function getUnlockName(char, mark, isTaintedChar) {
+            if (isTaintedChar) {
+                if (path1Marks.includes(mark)) return taintedUnlocks[char]["Path1"];
+                if (path2Marks.includes(mark)) return taintedUnlocks[char]["Path2"];
+                if (mark === "Greed") return taintedUnlocks[char]["Greedier"];
+                if (mark === "Mom's Heart") return "No Unlock";
+                return taintedUnlocks[char][mark];
+            } else {
+                if (mark === "Greed") return normalUnlocks[char]["Greed"] + " / " + normalUnlocks[char]["Greedier"];
+                return normalUnlocks[char][mark];
+            }
+        }
+
+        // Calculates points for 100% circle (24 total points possible per char)
+        function getCompletionStats(charData) {
+            let points = 0;
+            marks.forEach(m => {
+                if (charData[m] === 1) points += 1;
+                if (charData[m] === 2) points += 2;
+            });
+            const percent = Math.floor((points / 24) * 100);
+            return { points, percent };
         }
 
         function renderHeaders() {
@@ -373,9 +526,10 @@
             tableHeaderRow.innerHTML = html;
         }
 
-        function attachTooltip(element, text) {
+        // Allows Tooltips to Dynamically update (e.g. if you check a box, the percentage updates immediately)
+        function attachTooltip(element, getTextFn) {
             element.addEventListener('mouseenter', () => {
-                tooltip.innerHTML = text;
+                tooltip.innerHTML = getTextFn();
                 tooltip.classList.add('visible');
             });
 
@@ -397,11 +551,46 @@
             });
         }
 
+        function renderSidebar() {
+            targetList.innerHTML = '';
+            if (targets.length === 0) {
+                targetList.innerHTML = '<div style="padding: 20px; color: #666; text-align: center;">Right-click any mark to add it to your goals!</div>';
+                return;
+            }
+
+            targets.forEach((t, index) => {
+                const itemName = getUnlockName(t.char, t.mark, t.isTainted);
+                const prefix = t.isTainted ? "Tainted " : "";
+                const markPrefix = markFiles[t.mark];
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'target-item';
+                itemDiv.innerHTML = `
+                    <img src="images/marks/Completion_${markPrefix}_Hard.webp" class="target-icon" onerror="this.style.display='none'">
+                    <div class="target-info">
+                        <span class="target-item-name">${itemName}</span>
+                        <span class="target-char-name">${prefix}${t.char} - ${t.mark}</span>
+                    </div>
+                `;
+                
+                // Clicking it removes it from targets
+                itemDiv.addEventListener('click', () => {
+                    targets.splice(index, 1);
+                    saveTargets();
+                    renderTable(); // Refresh table to remove gold outline
+                });
+
+                targetList.appendChild(itemDiv);
+            });
+        }
+
         function renderTable() {
             tableBody.innerHTML = '';
 
             characters.forEach(char => {
                 const tr = document.createElement('tr');
+                tr.dataset.char = char; // For search function
+                
                 const charData = isTainted ? saveData[char].tainted : saveData[char].normal;
                 const charPrefix = isTainted ? "Tainted " : "";
                 
@@ -415,16 +604,18 @@
                 `;
                 tr.appendChild(tdChar);
 
+                // Percentage Box
                 const hundredPercentTd = document.createElement('td');
                 const hundredPercentBox = document.createElement('div');
                 hundredPercentBox.className = 'hundred-percent-box';
                 hundredPercentTd.appendChild(hundredPercentBox);
 
-                // Configure 100% tooltip
-                const hundredPercentText = isTainted 
-                    ? `Death Certificate<br><span class="tooltip-sub">(Requires all marks on ALL Tainted Characters)</span>`
-                    : normalUnlocks[char]["100%"];
-                attachTooltip(hundredPercentTd, hundredPercentText);
+                // Setup 100% tooltip and display
+                attachTooltip(hundredPercentTd, () => {
+                    const stats = getCompletionStats(charData);
+                    const item = isTainted ? `Death Certificate<br><span class="tooltip-sub">(Requires all marks on ALL Tainted Characters)</span>` : normalUnlocks[char]["100%"];
+                    return `Completion: ${stats.percent}% (${stats.points}/24)<br>Item: <span class="tooltip-gold">${item}</span>`;
+                });
 
                 marks.forEach(mark => {
                     const tdMark = document.createElement('td');
@@ -433,46 +624,56 @@
                     const checkbox = document.createElement('div');
                     checkbox.className = 'checkbox';
                     
+                    // Add attributes for the search function
+                    const unlockName = getUnlockName(char, mark, isTainted);
+                    checkbox.dataset.itemName = unlockName;
+                    checkbox.dataset.markName = mark;
+                    
                     const fill = document.createElement('div');
                     fill.className = 'hold-fill';
                     checkbox.appendChild(fill);
 
-                    updateCheckboxVisual(checkbox, mark, charData[mark]);
+                    updateCheckboxVisual(checkbox, mark, charData[mark], char, isTainted);
 
-                    // Determine Tooltip Text Based on Tainted vs Normal rules
-                    let unlockText = "";
-                    if (isTainted) {
-                        if (path1Marks.includes(mark)) unlockText = `${taintedUnlocks[char]["Path1"]}<br><span class="tooltip-sub">(Requires Isaac, ???, Satan, & The Lamb)</span>`;
-                        else if (path2Marks.includes(mark)) unlockText = `${taintedUnlocks[char]["Path2"]}<br><span class="tooltip-sub">(Requires Boss Rush & Hush)</span>`;
-                        else if (mark === "Greed") unlockText = `Greed: None<br>Greedier: ${taintedUnlocks[char]["Greedier"]}`;
-                        else if (mark === "Mom's Heart") unlockText = "<span style='color: #888;'>No individual unlock</span>";
-                        else unlockText = taintedUnlocks[char][mark];
-                    } else {
-                        if (mark === "Greed") unlockText = `Greed: <span style="color: #aaa">${normalUnlocks[char]["Greed"]}</span><br>Greedier: <span style="color: #ff5555">${normalUnlocks[char]["Greedier"]}</span>`;
-                        else unlockText = normalUnlocks[char][mark];
-                    }
-                    attachTooltip(tdMark, unlockText);
+                    // Dynamic Tooltip Setup
+                    attachTooltip(tdMark, () => {
+                        let text = "";
+                        if (isTainted) {
+                            if (path1Marks.includes(mark)) text = `${taintedUnlocks[char]["Path1"]}<br><span class="tooltip-sub">(Requires Isaac, ???, Satan, & The Lamb)</span>`;
+                            else if (path2Marks.includes(mark)) text = `${taintedUnlocks[char]["Path2"]}<br><span class="tooltip-sub">(Requires Boss Rush & Hush)</span>`;
+                            else if (mark === "Greed") text = `Greed: None<br>Greedier: <span class="tooltip-gold">${taintedUnlocks[char]["Greedier"]}</span>`;
+                            else if (mark === "Mom's Heart") text = "<span style='color: #888;'>No individual unlock</span>";
+                            else text = `<span class="tooltip-gold">${taintedUnlocks[char][mark]}</span>`;
+                        } else {
+                            if (mark === "Greed") text = `Greed: <span style="color: #aaa">${normalUnlocks[char]["Greed"]}</span><br>Greedier: <span style="color: #ff5555">${normalUnlocks[char]["Greedier"]}</span>`;
+                            else text = `<span class="tooltip-gold">${normalUnlocks[char][mark]}</span>`;
+                        }
+                        return text;
+                    });
 
-                    // Click/Hold mechanics
+                    // Hold System Logic
                     let isHolding = false;
                     let holdTimer;
 
                     const startHold = (e) => {
-                        if (e.type !== 'touchstart') e.preventDefault();
+                        if (e.type !== 'touchstart' && e.button !== 2) e.preventDefault();
+                        if (e.button === 2) return; // Ignore right click for holding
+
                         isHolding = true;
                         fill.style.transition = `height ${holdDuration}ms linear`;
                         fill.style.height = '100%';
 
                         holdTimer = setTimeout(() => {
                             charData[mark] = charData[mark] === 2 ? 0 : 2;
-                            updateCheckboxVisual(checkbox, mark, charData[mark]);
+                            updateCheckboxVisual(checkbox, mark, charData[mark], char, isTainted);
                             check100Percent(charData, hundredPercentBox);
                             save();
                             isHolding = false;
                         }, holdDuration);
                     };
 
-                    const endHold = () => {
+                    const endHold = (e) => {
+                        if (e && e.button === 2) return;
                         if (!isHolding) return;
                         clearTimeout(holdTimer);
                         fill.style.transition = 'none';
@@ -480,7 +681,7 @@
                         isHolding = false;
 
                         charData[mark] = charData[mark] === 1 ? 0 : 1;
-                        updateCheckboxVisual(checkbox, mark, charData[mark]);
+                        updateCheckboxVisual(checkbox, mark, charData[mark], char, isTainted);
                         check100Percent(charData, hundredPercentBox);
                         save();
                     };
@@ -492,6 +693,20 @@
                         fill.style.height = '0%';
                         isHolding = false;
                     };
+
+                    // Setup Right-Click to Target
+                    checkbox.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const isTargeted = targets.some(t => t.char === char && t.isTainted === isTainted && t.mark === mark);
+                        if (isTargeted) {
+                            targets = targets.filter(t => !(t.char === char && t.isTainted === isTainted && t.mark === mark));
+                            checkbox.classList.remove('targeted');
+                        } else {
+                            targets.push({ char, isTainted, mark });
+                            checkbox.classList.add('targeted');
+                        }
+                        saveTargets();
+                    });
 
                     checkbox.addEventListener('mousedown', startHold);
                     checkbox.addEventListener('mouseup', endHold);
@@ -510,11 +725,16 @@
             });
         }
 
-        function updateCheckboxVisual(element, mark, state) {
-            element.classList.remove('normal', 'hard');
+        // Handles applying classes, images, and gold target borders
+        function updateCheckboxVisual(element, mark, state, charName, taintedState) {
+            element.classList.remove('normal', 'hard', 'targeted');
             element.style.backgroundImage = 'none';
             
             const markPrefix = markFiles[mark];
+
+            // Check if targeted
+            const isTargeted = targets.some(t => t.char === charName && t.isTainted === taintedState && t.mark === mark);
+            if (isTargeted) element.classList.add('targeted');
 
             if (state === 1) {
                 element.classList.add('normal');
@@ -528,15 +748,42 @@
         }
 
         function check100Percent(charData, hundredPercentElement) {
-            let isComplete = true;
-            for (let i = 0; i < marks.length; i++) {
-                if (charData[marks[i]] !== 2) { 
-                    isComplete = false;
-                    break;
-                }
-            }
-            if (isComplete) hundredPercentElement.classList.add('achieved');
+            const stats = getCompletionStats(charData);
+            hundredPercentElement.innerText = `${stats.percent}%`;
+            
+            if (stats.percent === 100) hundredPercentElement.classList.add('achieved');
             else hundredPercentElement.classList.remove('achieved');
+        }
+
+        // Fast filtering logic for the Search Bar
+        function handleSearch() {
+            const term = searchBar.value.toLowerCase();
+            const rows = document.querySelectorAll('#table-body tr');
+            
+            rows.forEach(row => {
+                let rowHasMatch = false;
+                const charName = row.dataset.char.toLowerCase();
+                const charPrefix = isTainted ? "tainted " : "";
+                const fullCharName = charPrefix + charName;
+                
+                if (fullCharName.includes(term)) rowHasMatch = true;
+
+                const cells = row.querySelectorAll('.mark-cell');
+                cells.forEach(cell => {
+                    const box = cell.querySelector('.checkbox');
+                    const itemName = box.dataset.itemName.toLowerCase();
+                    const markName = box.dataset.markName.toLowerCase();
+                    
+                    if (term === "" || itemName.includes(term) || fullCharName.includes(term) || markName.includes(term)) {
+                        box.classList.remove('dimmed');
+                        rowHasMatch = true;
+                    } else {
+                        box.classList.add('dimmed');
+                    }
+                });
+
+                row.style.display = rowHasMatch || term === "" ? '' : 'none';
+            });
         }
 
         init();
